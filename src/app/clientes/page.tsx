@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
   TextField,
   Typography,
   Alert,
-  Paper
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  CircularProgress
 } from '@mui/material';
 
 export default function ClientesPage() {
@@ -15,13 +19,27 @@ export default function ClientesPage() {
   const [idade, setIdade] = useState<number | ''>('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch('http://localhost:5000/users') // Substitua pelo seu endpoint real
+      .then(response => response.json())
+      .then(data => {
+        setClientes(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar clientes:', error);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validações
     if (!nome || idade === '') {
       setError('Nome e idade são obrigatórios.');
       return;
@@ -32,13 +50,34 @@ export default function ClientesPage() {
       return;
     }
 
-    // Simulação de sucesso
-    setSuccess('Cliente cadastrado com sucesso!');
-    console.log('Cliente:', { nome, idade });
+    try {
+      const response = await fetch('http://localhost:5000/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user: {
+            name: nome,
+            email: `${nome.toLowerCase()}@example.com`,
+            age: idade
+          }
+        })
+      });
 
-    // Limpa o formulário
-    setNome('');
-    setIdade('');
+      if (!response.ok) {
+        throw new Error('Erro ao cadastrar cliente');
+      }
+
+      const newUser = await response.json();
+      setClientes([...clientes, newUser]);
+      setSuccess('Cliente cadastrado com sucesso!');
+      setNome('');
+      setIdade('');
+    } catch (error) {
+      setError('Erro ao cadastrar cliente');
+      console.error(error);
+    }
   };
 
   return (
@@ -75,6 +114,22 @@ export default function ClientesPage() {
           Cadastrar
         </Button>
       </Box>
+
+      <Typography variant="h6" gutterBottom sx={{ marginTop: 4 }}>
+        Lista de Clientes
+      </Typography>
+
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        <List>
+          {clientes.map(cliente => (
+            <ListItem key={cliente.id}>
+              <ListItemText primary={cliente.name || 'Nome não informado'} secondary={cliente.email} />
+            </ListItem>
+          ))}
+        </List>
+      )}
     </Paper>
   );
 }

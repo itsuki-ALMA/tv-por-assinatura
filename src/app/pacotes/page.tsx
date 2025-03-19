@@ -25,24 +25,21 @@ import { Delete, Info } from '@mui/icons-material';
 import { SelectChangeEvent } from '@mui/material';
 
 interface ServicoAdicional {
-  nome: string;
-  valor: number;
+  id: number;
+  name: string;
+  price: number;
 }
 
 interface Pacote {
+  id: number;
   nome: string;
   servicosAdicionais: ServicoAdicional[];
-  valor: number;
+  price: number;
 }
 
 export default function PacotesPage() {
   const [nome, setNome] = useState('');
-  const [servicos, setServicos] = useState<ServicoAdicional[]>([
-    { nome: 'Instalação Rápida', valor: 29.99 },
-    { nome: 'Suporte Premium', valor: 79.99 },
-    { nome: 'Consultoria Técnica', valor: 49.99 },
-    { nome: 'Atendimento Prioritário', valor: 59.99 },
-  ]);
+  const [servicos, setServicos] = useState<ServicoAdicional[]>([]);
   const [selectedServicos, setSelectedServicos] = useState<ServicoAdicional[]>([]);
   const [selectedServico, setSelectedServico] = useState<ServicoAdicional | null>(null);
   const [error, setError] = useState('');
@@ -52,8 +49,59 @@ export default function PacotesPage() {
   const [rowsPerPage] = useState(5);
   const [showDetails, setShowDetails] = useState<number | null>(null);
 
+  // Fetch para obter serviços adicionais
+  const fetchServicos = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/additional_services');
+      const data = await response.json();
+
+      const servicosComPreco = data.map((servico: any) => {
+        const preco = parseFloat(servico.price);
+        return {
+          id: servico.id,
+          name: servico.name,
+          price: !isNaN(preco) ? preco : 0,
+        };
+      });
+
+      setServicos(servicosComPreco);
+    } catch (error) {
+      console.error('Erro ao buscar serviços adicionais:', error);
+    }
+  };
+
+  // Fetch para obter pacotes existentes
+  const fetchPacotes = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/subscription_packs');
+      const data = await response.json();
+
+      const pacotesComServicos = data.map((pacote: any) => ({
+        id: pacote.id,
+        nome: pacote.name,
+        price: parseFloat(pacote.price),
+        servicosAdicionais: pacote.additional_services.map((servico: any) => ({
+          id: servico.id,
+          name: servico.name,
+        })),
+        valorTotal: pacote.additional_services.reduce((acc: number, servico: any) => acc + parseFloat(servico.price), 0),
+      }));
+
+      setPacotes(pacotesComServicos);
+    } catch (error) {
+      console.error('Erro ao buscar pacotes:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      fetchServicos();
+      fetchPacotes(); // Chama a função para carregar os pacotes
+    }
+  }, []);
+
   const handleServicoChange = (e: SelectChangeEvent<string>) => {
-    const servico = servicos.find(s => s.nome === e.target.value);
+    const servico = servicos.find(s => s.name === e.target.value);
     if (servico) {
       setSelectedServico(servico);
     }
@@ -62,7 +110,7 @@ export default function PacotesPage() {
   const handleAddServico = () => {
     if (!selectedServico) return;
 
-    if (selectedServicos.some(s => s.nome === selectedServico.nome)) {
+    if (selectedServicos.some(s => s.name === selectedServico.name)) {
       setError('Este serviço já foi adicionado.');
       return;
     }
@@ -73,10 +121,10 @@ export default function PacotesPage() {
   };
 
   const handleDeleteServico = (servico: ServicoAdicional) => {
-    setSelectedServicos(selectedServicos.filter(s => s !== servico));
+    setSelectedServicos(selectedServicos.filter(s => s.id !== servico.id));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -86,14 +134,35 @@ export default function PacotesPage() {
       return;
     }
 
-    const pacoteValor = selectedServicos.reduce((acc, servico) => acc + servico.valor, 0);
-    const novoPacote: Pacote = { nome, servicosAdicionais: selectedServicos, valor: pacoteValor };
+    const pacote = {
+      subscription_pack: {
+        name: nome,
+        description: nome,
+        price: selectedServicos.reduce((acc, servico) => acc + servico.price, 0),
+      },
+      service_ids: selectedServicos.map(servico => servico.id),
+    };
 
-    setPacotes([...pacotes, novoPacote]);
-    setSuccess('Pacote cadastrado com sucesso!');
-    setNome('');
-    setSelectedServicos([]);
-    setSelectedServico(null);
+    try {
+      const response = await fetch('http://localhost:5000/subscription_packs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pacote),
+      });
+
+      if (response.ok) {
+        setSuccess('Pacote cadastrado com sucesso!');
+        fetchPacotes(); // Atualiza a lista de pacotes após o cadastro
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Erro ao cadastrar pacote.');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar dados:', error);
+      setError('Erro ao enviar dados.');
+    }
   };
 
   const handleDeletePacote = (index: number) => {
@@ -153,27 +222,33 @@ export default function PacotesPage() {
               <InputLabel id="select-servico-label">Escolha um Serviço Adicional</InputLabel>
               <Select
                 labelId="select-servico-label"
-                value={selectedServico?.nome || ''}
+                value={selectedServico?.name || ''}
                 onChange={handleServicoChange}
                 label="Escolha um Serviço Adicional"
               >
                 {servicos.map((servico, index) => (
-                  <MenuItem key={index} value={servico.nome}>
-                    {servico.nome} - R$ {servico.valor.toFixed(2)}
+                  <MenuItem key={index} value={servico.name}>
+                    {servico.name} - R$ {servico.price.toFixed(2)}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            <Button variant="outlined" color="secondary" onClick={handleAddServico} disabled={!selectedServico} sx={{
-                borderColor: '#4e148c', // Tom de roxo mais escuro
-                color: '#4e148c', // Texto roxo mais escuro
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={handleAddServico}
+              disabled={!selectedServico}
+              sx={{
+                borderColor: '#4e148c',
+                color: '#4e148c',
                 '&:hover': {
-                  backgroundColor: '#6a1b9a', // Cor de fundo ao passar o mouse
-                  borderColor: '#4e148c', // Contorno ao passar o mouse
-                  color: '#fff', // Cor do texto ao passar o mouse
-                }
-              }}>
+                  backgroundColor: '#6a1b9a',
+                  borderColor: '#4e148c',
+                  color: '#fff',
+                },
+              }}
+            >
               Adicionar Serviço
             </Button>
           </Box>
@@ -190,8 +265,8 @@ export default function PacotesPage() {
               <TableBody>
                 {selectedServicos.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((servico, index) => (
                   <TableRow key={index}>
-                    <TableCell>{servico.nome}</TableCell>
-                    <TableCell align="right">R$ {servico.valor.toFixed(2)}</TableCell>
+                    <TableCell>{servico.name}</TableCell>
+                    <TableCell align="right">R$ {servico.price.toFixed(2)}</TableCell>
                     <TableCell align="right">
                       <IconButton color="error" onClick={() => handleDeleteServico(servico)}>
                         <Delete />
@@ -213,7 +288,7 @@ export default function PacotesPage() {
           />
 
           <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'right' }}>
-            Total: R$ {selectedServicos.reduce((acc, servico) => acc + servico.valor, 0).toFixed(2)}
+            Total: R$ {selectedServicos.reduce((acc, servico) => acc + servico.price, 0).toFixed(2)}
           </Typography>
 
           <Button type="submit" variant="contained" color="primary" size="large">
@@ -225,22 +300,22 @@ export default function PacotesPage() {
       <Typography variant="h6" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
         Pacotes Cadastrados:
       </Typography>
-      <TableContainer component={Paper} sx={{ maxHeight: '250px' }}>
+      <TableContainer component={Paper} sx={{ maxHeight: '400px' }}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell><strong>Nome do Pacote</strong></TableCell>
               <TableCell align="right"><strong>Valor Total</strong></TableCell>
-              <TableCell align="right"><strong>Ações</strong></TableCell>
+              <TableCell align="right"><strong>Ação</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {pacotes.map((pacote, index) => (
               <TableRow key={index}>
                 <TableCell>{pacote.nome}</TableCell>
-                <TableCell align="right">R$ {pacote.valor.toFixed(2)}</TableCell>
+                <TableCell align="right">R$ {pacote.price.toFixed(2)}</TableCell>
                 <TableCell align="right">
-                  <IconButton color="primary" onClick={() => setShowDetails(showDetails === index ? null : index)}>
+                  <IconButton onClick={() => setShowDetails(pacote.id)}>
                     <Info />
                   </IconButton>
                   <IconButton color="error" onClick={() => handleDeletePacote(index)}>
@@ -252,30 +327,6 @@ export default function PacotesPage() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      {showDetails !== null && (
-        <Paper sx={{ padding: 3, marginTop: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Detalhes do Pacote: {pacotes[showDetails].nome}
-          </Typography>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Serviço</strong></TableCell>
-                <TableCell align="right"><strong>Valor</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {pacotes[showDetails].servicosAdicionais.map((servico, index) => (
-                <TableRow key={index}>
-                  <TableCell>{servico.nome}</TableCell>
-                  <TableCell align="right">R$ {servico.valor.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Paper>
-      )}
     </Box>
   );
 }

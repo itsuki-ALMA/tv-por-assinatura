@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -13,7 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   Alert
 } from '@mui/material';
 
@@ -29,25 +28,63 @@ export default function PlanosPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Função para buscar os planos da API
+  const fetchPlanos = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/subscription_plans');
+      const data = await response.json();
+      
+      if (data.subscription_plans) {
+        const planosFetched = data.subscription_plans.map((plano: any) => ({
+          nome: plano.name,
+          valor: parseFloat(plano.price)
+        }));
+        setPlanos(planosFetched);
+      }
+    } catch (error) {
+      setError('Erro ao buscar planos.');
+    }
+  };
+
+  useEffect(() => {
+    fetchPlanos();
+  }, []); // Carregar os planos assim que o componente for montado
+
+  // Função para cadastrar um novo plano
+  const handleCreatePlano = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validações
     if (!nome || valor === '') {
       setError('Nome e valor são obrigatórios.');
       return;
     }
 
-    // Adicionar plano à lista
-    const novoPlano = { nome, valor: Number(valor) };
-    setPlanos([...planos, novoPlano]);
+    const novoPlano = { subscription_plan: { name: nome, price: valor } };
 
-    // Simulação de sucesso
-    setSuccess('Plano cadastrado com sucesso!');
-    setNome('');
-    setValor('');
+    try {
+      const response = await fetch('http://localhost:5000/subscription_plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(novoPlano)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao cadastrar plano.');
+      }
+
+      setSuccess('Plano cadastrado com sucesso!');
+      setNome('');
+      setValor('');
+
+      // Atualizar lista de planos
+      fetchPlanos();
+    } catch (error) {
+      setError('Erro ao cadastrar plano.');
+    }
   };
 
   return (
@@ -57,7 +94,7 @@ export default function PlanosPage() {
       </Typography>
 
       <Paper elevation={3} sx={{ padding: 3, marginBottom: 4 }}>
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box component="form" onSubmit={handleCreatePlano} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {error && <Alert severity="error">{error}</Alert>}
           {success && <Alert severity="success">{success}</Alert>}
 
@@ -100,7 +137,7 @@ export default function PlanosPage() {
             {planos.map((plano, index) => (
               <TableRow key={index}>
                 <TableCell>{plano.nome}</TableCell>
-                <TableCell align="right">{plano.valor.toFixed(2)}</TableCell>
+                <TableCell align="right">R$ {plano.valor.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

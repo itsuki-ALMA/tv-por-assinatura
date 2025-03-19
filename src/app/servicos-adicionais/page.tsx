@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -17,8 +17,11 @@ import {
 } from '@mui/material';
 
 interface ServicoAdicional {
-  nome: string;
-  valor: number;
+  id: number;
+  name: string;
+  price: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function ServicosAdicionaisPage() {
@@ -27,6 +30,20 @@ export default function ServicosAdicionaisPage() {
   const [servicos, setServicos] = useState<ServicoAdicional[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Estado para garantir que o código só é executado no cliente
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // Garantir que estamos no cliente
+    setIsClient(true);
+
+    // Carregar serviços adicionais via GET
+    fetch('http://localhost:5000/additional_services')
+      .then((response) => response.json())
+      .then((data) => setServicos(data))
+      .catch((error) => console.error('Erro ao carregar os serviços adicionais', error));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,14 +56,32 @@ export default function ServicosAdicionaisPage() {
       return;
     }
 
-    // Adicionar serviço à lista
-    const novoServico = { nome, valor: Number(valor) };
-    setServicos([...servicos, novoServico]);
+    // Adicionar serviço via POST
+    const novoServico = { 
+      additional_service: { 
+        name: nome, 
+        price: valor 
+      } 
+    };
 
-    // Simulação de sucesso
-    setSuccess('Serviço Adicional cadastrado com sucesso!');
-    setNome('');
-    setValor('');
+    fetch('http://localhost:5000/additional_services', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(novoServico),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setServicos((prevServicos) => [...prevServicos, data]); // Adiciona o novo serviço à lista
+        setSuccess('Serviço Adicional cadastrado com sucesso!');
+        setNome('');
+        setValor('');
+      })
+      .catch((error) => {
+        setError('Erro ao cadastrar o serviço adicional.');
+        console.error('Erro ao cadastrar serviço adicional', error);
+      });
   };
 
   return (
@@ -96,10 +131,10 @@ export default function ServicosAdicionaisPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {servicos.map((servico, index) => (
-              <TableRow key={index}>
-                <TableCell>{servico.nome}</TableCell>
-                <TableCell align="right">{servico.valor.toFixed(2)}</TableCell>
+            {servicos.map((servico) => (
+              <TableRow key={servico.id}>
+                <TableCell>{servico.name}</TableCell>
+                <TableCell align="right">{parseFloat(servico.price).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
