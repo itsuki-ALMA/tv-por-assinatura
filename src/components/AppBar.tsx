@@ -37,7 +37,7 @@ export default function CustomAppBar() {
     { label: 'Serviços Adicionais', path: '/servicos-adicionais' },
     { label: 'Pacotes', path: '/pacotes' },
     { label: 'Assinaturas', path: '/assinaturas' },
-    { label: 'Faturamento', path: '/faturamento' },
+    { label: 'pagamento', path: '/pagamento' },
   ];
 
   return (
