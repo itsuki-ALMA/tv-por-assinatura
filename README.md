@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema TV por Assinatura - ACME
 
-## Getting Started
+Este é um projeto [Next.js](https://nextjs.org) inicializado com [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-First, run the development server:
+## Introdução
 
-```bash
+Este projeto é um sistema de TV por assinatura que permite gerenciar clientes, planos, pacotes, serviços adicionais e assinaturas. Ele utiliza Next.js para o frontend e MUI para os componentes de interface do usuário.
+
+## Estrutura do Projeto
+
+- **Clientes**: Gerenciamento de clientes, incluindo cadastro e listagem.
+- **Planos**: Gerenciamento de planos de assinatura.
+- **Pacotes**: Gerenciamento de pacotes de assinatura que podem incluir vários serviços adicionais.
+- **Serviços Adicionais**: Gerenciamento de serviços adicionais que podem ser incluídos nos pacotes.
+- **Assinaturas**: Gerenciamento de assinaturas dos clientes, incluindo a seleção de planos e pacotes.
+- **Pagamentos**: Geração de boletos e carnês para pagamento das assinaturas.
+
+## Começando
+
+Primeiro, execute o servidor de desenvolvimento:
+
+bash
 npm run dev
-# or
+# ou
 yarn dev
-# or
+# ou
 pnpm dev
-# or
+# ou
 bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra http://localhost:3000 no seu navegador para ver o resultado.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Você pode começar a editar a página modificando src/app/page.tsx. A página é atualizada automaticamente conforme você edita o arquivo.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Funcionalidades
 
-## Learn More
+- **Clientes**
 
-To learn more about Next.js, take a look at the following resources:
+A página de clientes permite cadastrar novos clientes e listar os clientes existentes. O cadastro de clientes exige nome e idade, e a idade mínima é de 18 anos.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Planos**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A página de planos permite cadastrar novos planos de assinatura e listar os planos existentes. Cada plano possui um nome e um valor.
 
-## Deploy on Vercel
+-**Pacotes**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A página de pacotes permite cadastrar novos pacotes de assinatura e listar os pacotes existentes. Cada pacote pode incluir vários serviços adicionais.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Serviços Adicionais**
+
+A página de serviços adicionais permite cadastrar novos serviços adicionais e listar os serviços existentes. Cada serviço possui um nome e um valor.
+
+- **Assinaturas**
+
+A página de assinaturas permite gerenciar as assinaturas dos clientes, incluindo a seleção de planos e pacotes. Também é possível adicionar serviços extras às assinaturas.
+
+- **Pagamentos**
+
+A página de pagamentos permite gerar boletos e carnês para pagamento das assinaturas. Os boletos são gerados em formato PDF e incluem um código de barras.
+
+## Saiba Mais
+
+Para saber mais sobre Next.js, consulte os seguintes recursos:
+
+Documentação do Next.js - saiba mais sobre os recursos e a API do Next.js.
+Aprenda Next.js - um tutorial interativo de Next.js.
+Você pode conferir o repositório do Next.js no GitHub - seu feedback e contribuições são bem-vindos!
+
+## Deploy na Vercel
+
+A maneira mais fácil de fazer o deploy do seu aplicativo Next.js é usar a Plataforma Vercel dos criadores do Next.js.
+
+Confira nossa documentação de deploy do Next.js para mais detalhes.
