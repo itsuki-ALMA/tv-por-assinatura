@@ -179,7 +179,7 @@ export default function AssinaturasListPage() {
 
       <List>
         {assinaturas.map((assinatura) => (
-          <ListItem component = "button" key={assinatura.id} onClick={() => abrirDetalhes(assinatura)}>
+          <ListItem component = "button" key={assinatura.user_name} onClick={() => abrirDetalhes(assinatura)}>
             <ListItemText
               primary={`Assinatura de ${assinatura.user_name} - R$ ${parseFloat(assinatura.total_value).toFixed(2)}`}
             />
